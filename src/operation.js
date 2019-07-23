@@ -54,13 +54,11 @@ const fetchCurrentCity = () => {
       cb(error);
     });
   };
-  operation.setCallbacks = (error, result) => {
-    if (error) {
-      operation.onFailure.push(error);
-    }
-    if (result) {
-      operation.onSuccess.push(result);
-    }
+  operation.setSuccessCb = result => {
+    operation.onSuccess.push(result);
+  };
+  operation.setFailureCb = error => {
+    operation.onFailure.push(error);
   };
   getCurrentCity((error, result) => {
     if (error) {
@@ -75,11 +73,11 @@ const fetchCurrentCity = () => {
 test('pass multiple callbacks -- all of them called', done => {
   const operation = fetchCurrentCity();
   const multiDone = callDone(done).afterTwoCalls();
-  operation.setCallbacks(error => done(error), result => multiDone());
-  operation.setCallbacks(error => done(error), result => multiDone());
+  operation.setSuccessCb(result => multiDone());
+  operation.setSuccessCb(result => multiDone());
 });
 
 test('fetchCurrentCity pass the callbacks later on', done => {
   const operation = fetchCurrentCity();
-  operation.setCallbacks(error => done(error), result => done());
+  operation.setSuccessCb(result => done());
 });
