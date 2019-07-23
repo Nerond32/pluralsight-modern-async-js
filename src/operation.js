@@ -1,19 +1,16 @@
 const delayms = 1;
 
 function getCurrentCity(callback) {
-  setTimeout(function () {
-
-    const city = "New York, NY";
+  setTimeout(function() {
+    const city = 'New York, NY';
     callback(null, city);
-
-  }, delayms)
+  }, delayms);
 }
 
 function getWeather(city, callback) {
-  setTimeout(function () {
-
+  setTimeout(function() {
     if (!city) {
-      callback(new Error("City required to get weather"));
+      callback(new Error('City required to get weather'));
       return;
     }
 
@@ -21,16 +18,14 @@ function getWeather(city, callback) {
       temp: 50
     };
 
-    callback(null, weather)
-
-  }, delayms)
+    callback(null, weather);
+  }, delayms);
 }
 
 function getForecast(city, callback) {
-  setTimeout(function () {
-
+  setTimeout(function() {
     if (!city) {
-      callback(new Error("City required to get forecast"));
+      callback(new Error('City required to get forecast'));
       return;
     }
 
@@ -38,7 +33,25 @@ function getForecast(city, callback) {
       fiveDay: [60, 70, 80, 45, 50]
     };
 
-    callback(null, fiveDay)
-
-  }, delayms)
+    callback(null, fiveDay);
+  }, delayms);
 }
+
+const fetchCurrentCity = (onSuccess, onFailure) => {
+  getCurrentCity((error, result) => {
+    if (error) {
+      onFailure(error);
+    }
+    onSuccess(result);
+  });
+};
+
+test('fetchCurrentCity with separate success and error callbacks', () => {
+  const success = result => {
+    console.log(result);
+  };
+  const failure = error => {
+    console.log(error);
+  };
+  fetchCurrentCity(success, failure);
+});
