@@ -40,50 +40,27 @@ function getForecast(city, callback) {
 suite.only('operations');
 
 const fetchCurrentCity = () => {
-  const operation = {
-    onSuccess: [],
-    onFailure: []
-  };
-  const callAllSuccesses = result => {
-    operation.onSuccess.forEach(cb => {
-      cb(result);
-    });
-  };
-  const callAllFailures = error => {
-    operation.onFailure.forEach(cb => {
-      cb(error);
-    });
-  };
-  operation.setSuccessCb = result => {
-    operation.onSuccess.push(result);
-  };
-  operation.setFailureCb = error => {
-    operation.onFailure.push(error);
-  };
-  getCurrentCity((error, result) => {
-    if (error) {
-      callAllFailures(error);
-      return;
-    }
-    callAllSuccesses(result);
-  }, 5);
+  const operation = new Operation();
+  getCurrentCity(operation.nodeCallback);
   return operation;
 };
 
 const fetchWeather = city => {
+  const operation = new Operation();
+  getWeather(city, operation.nodeCallback);
+  return operation;
+};
+
+const fetchForecast = city => {
+  const operation = new Operation();
+  getForecast(city, operation.nodeCallback);
+  return operation;
+};
+
+function Operation() {
   const operation = {
     onSuccess: [],
     onFailure: []
-  };
-  const callAllSuccesses = result => {
-    operation.onSuccess.forEach(cb => {
-      cb(result);
-    });
-  };
-  const callAllFailures = error => {
-    operation.onFailure.forEach(cb => {
-      cb(error);
-    });
   };
   operation.setSuccessCb = result => {
     operation.onSuccess.push(result);
@@ -91,19 +68,25 @@ const fetchWeather = city => {
   operation.setFailureCb = error => {
     operation.onFailure.push(error);
   };
-  getWeather(
-    city,
-    (error, result) => {
-      if (error) {
-        callAllFailures(error);
-        return;
-      }
-      callAllSuccesses(result);
-    },
-    5
-  );
+  operation.succeed = result => {
+    operation.onSuccess.forEach(cb => {
+      cb(result);
+    });
+  };
+  operation.fail = error => {
+    operation.onFailure.forEach(cb => {
+      cb(error);
+    });
+  };
+  operation.nodeCallback = (error, result) => {
+    if (error) {
+      operation.fail(error);
+      return;
+    }
+    operation.succeed(result);
+  };
   return operation;
-};
+}
 
 test('register only success handler, ignores error', done => {
   const operation = fetchCurrentCity();
