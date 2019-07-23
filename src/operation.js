@@ -70,6 +70,53 @@ const fetchCurrentCity = () => {
   return operation;
 };
 
+const fetchWeather = city => {
+  const operation = {
+    onSuccess: [],
+    onFailure: []
+  };
+  const callAllSuccesses = result => {
+    operation.onSuccess.forEach(cb => {
+      cb(result);
+    });
+  };
+  const callAllFailures = error => {
+    operation.onFailure.forEach(cb => {
+      cb(error);
+    });
+  };
+  operation.setSuccessCb = result => {
+    operation.onSuccess.push(result);
+  };
+  operation.setFailureCb = error => {
+    operation.onFailure.push(error);
+  };
+  getWeather(
+    city,
+    (error, result) => {
+      if (error) {
+        callAllFailures(error);
+        return;
+      }
+      callAllSuccesses(result);
+    },
+    5
+  );
+  return operation;
+};
+
+test('register only success handler, ignores error', done => {
+  const operation = fetchCurrentCity();
+  operation.setFailureCb(error => done(error));
+  operation.setSuccessCb(result => done());
+});
+
+test('register only error handler, ignores success', done => {
+  const operation = fetchWeather();
+  operation.setSuccessCb(result => done(new Error("shouldn't succeed")));
+  operation.setFailureCb(error => done());
+});
+
 test('pass multiple callbacks -- all of them called', done => {
   const operation = fetchCurrentCity();
   const multiDone = callDone(done).afterTwoCalls();
