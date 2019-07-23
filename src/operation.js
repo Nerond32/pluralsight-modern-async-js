@@ -40,22 +40,44 @@ function getForecast(city, callback) {
 suite.only('operations');
 
 const fetchCurrentCity = () => {
-  const operation = {};
-  let onSuccess;
-  let onFailure;
+  const operation = {
+    onSuccess: [],
+    onFailure: []
+  };
+  const callAllSuccesses = result => {
+    operation.onSuccess.forEach(cb => {
+      cb(result);
+    });
+  };
+  const callAllFailures = error => {
+    operation.onFailure.forEach(cb => {
+      cb(error);
+    });
+  };
   operation.setCallbacks = (error, result) => {
-    onFailure = error;
-    onSuccess = result;
+    if (error) {
+      operation.onFailure.push(error);
+    }
+    if (result) {
+      operation.onSuccess.push(result);
+    }
   };
   getCurrentCity((error, result) => {
     if (error) {
-      onFailure(error);
+      callAllFailures(error);
       return;
     }
-    onSuccess(result);
+    callAllSuccesses(result);
   }, 5);
   return operation;
 };
+
+test('pass multiple callbacks -- all of them called', done => {
+  const operation = fetchCurrentCity();
+  const multiDone = callDone(done).afterTwoCalls();
+  operation.setCallbacks(error => done(error), result => multiDone());
+  operation.setCallbacks(error => done(error), result => multiDone());
+});
 
 test('fetchCurrentCity pass the callbacks later on', done => {
   const operation = fetchCurrentCity();
