@@ -37,21 +37,27 @@ function getForecast(city, callback) {
   }, delayms);
 }
 
-const fetchCurrentCity = (onSuccess, onFailure) => {
+suite.only('operations');
+
+const fetchCurrentCity = () => {
+  const operation = {};
+  let onSuccess;
+  let onFailure;
+  operation.setCallbacks = (error, result) => {
+    onFailure = error;
+    onSuccess = result;
+  };
   getCurrentCity((error, result) => {
     if (error) {
       onFailure(error);
+      return;
     }
     onSuccess(result);
-  });
+  }, 5);
+  return operation;
 };
 
-test('fetchCurrentCity with separate success and error callbacks', () => {
-  const success = result => {
-    console.log(result);
-  };
-  const failure = error => {
-    console.log(error);
-  };
-  fetchCurrentCity(success, failure);
+test('fetchCurrentCity pass the callbacks later on', done => {
+  const operation = fetchCurrentCity();
+  operation.setCallbacks(error => done(error), result => done());
 });
