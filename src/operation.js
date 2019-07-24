@@ -2,7 +2,7 @@ const delayms = 1;
 
 function getCurrentCity(callback) {
   setTimeout(function() {
-    const city = 'New York, NY';
+    const city = "New York, NY";
     callback(null, city);
   }, delayms);
 }
@@ -10,7 +10,7 @@ function getCurrentCity(callback) {
 function getWeather(city, callback) {
   setTimeout(function() {
     if (!city) {
-      callback(new Error('City required to get weather'));
+      callback(new Error("City required to get weather"));
       return;
     }
 
@@ -25,7 +25,7 @@ function getWeather(city, callback) {
 function getForecast(city, callback) {
   setTimeout(function() {
     if (!city) {
-      callback(new Error('City required to get forecast'));
+      callback(new Error("City required to get forecast"));
       return;
     }
 
@@ -37,7 +37,7 @@ function getForecast(city, callback) {
   }, delayms);
 }
 
-suite.only('operations');
+suite.only("operations");
 
 const fetchCurrentCity = () => {
   const operation = new Operation();
@@ -88,26 +88,45 @@ function Operation() {
   return operation;
 }
 
-test('register only success handler, ignores error', done => {
+test("unnesting", done => {
+  fetchCurrentCity().onCompletion(city => {
+    fetchWeather(city).onCompletion(weather => {
+      console.log(weather);
+    });
+  });
+});
+
+test("lexical paralleism", done => {
+  const city = "NYC";
+  const weatherOp = fetchWeather(city);
+  const forecastOp = fetchForecast(city);
+  weatherOp.onCompletion(weather => {
+    forecastOp.onCompletion(forecast => {
+      done();
+    });
+  });
+});
+
+test("register only success handler, ignores error", done => {
   const operation = fetchCurrentCity();
   operation.setFailureCb(error => done(error));
   operation.setSuccessCb(result => done());
 });
 
-test('register only error handler, ignores success', done => {
+test("register only error handler, ignores success", done => {
   const operation = fetchWeather();
   operation.setSuccessCb(result => done(new Error("shouldn't succeed")));
   operation.setFailureCb(error => done());
 });
 
-test('pass multiple callbacks -- all of them called', done => {
+test("pass multiple callbacks -- all of them called", done => {
   const operation = fetchCurrentCity();
   const multiDone = callDone(done).afterTwoCalls();
   operation.setSuccessCb(result => multiDone());
   operation.setSuccessCb(result => multiDone());
 });
 
-test('fetchCurrentCity pass the callbacks later on', done => {
+test("fetchCurrentCity pass the callbacks later on", done => {
   const operation = fetchCurrentCity();
   operation.setSuccessCb(result => done());
 });
