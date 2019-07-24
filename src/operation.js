@@ -89,11 +89,13 @@ function Operation() {
 }
 
 test("unnesting", done => {
+  let weatherOp = new Operation();
   fetchCurrentCity().onCompletion(city => {
     fetchWeather(city).onCompletion(weather => {
-      console.log(weather);
+      weatherOp.succeed(weather);
     });
   });
+  weatherOp.onCompletion(weather => done());
 });
 
 test("lexical paralleism", done => {
