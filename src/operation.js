@@ -1,8 +1,13 @@
 const delayms = 1;
 
+const expectedCurrentCity = 'New York, NY';
+const expectedForecast = {
+  fiveDay: [60, 70, 80, 45, 50]
+};
+
 function getCurrentCity(callback) {
   setTimeout(function() {
-    const city = 'New York, NY';
+    const city = expectedCurrentCity;
     callback(null, city);
   }, delayms);
 }
@@ -28,12 +33,7 @@ function getForecast(city, callback) {
       callback(new Error('City required to get forecast'));
       return;
     }
-
-    const fiveDay = {
-      fiveDay: [60, 70, 80, 45, 50]
-    };
-
-    callback(null, fiveDay);
+    callback(null, expectedForecast);
   }, delayms);
 }
 
@@ -73,13 +73,23 @@ function Operation() {
         const callbackResult = onSuccess(operation.result);
         if (callbackResult && callbackResult.then) {
           callbackResult.forwardCompletion(completionOp);
+          return;
         }
+        completionOp.succeed(callbackResult);
+      } else {
+        completionOp.succeed(operation.result);
       }
     };
     const errorHandler = () => {
       if (onError) {
         const callbackResult = onError(operation.error);
+        if (callbackResult && callbackResult.then) {
+          callbackResult.forwardCompletion(completionOp);
+          return;
+        }
         completionOp.succeed(callbackResult);
+      } else {
+        completionOp.fail(operation.error);
       }
     };
     if (operation.state == 'succeeded') {
@@ -88,9 +98,7 @@ function Operation() {
       errorHandler();
     } else {
       operation.successReactions.push(successHandler);
-      if (onError) {
-        operation.failureReactions.push(errorHandler);
-      }
+      operation.failureReactions.push(errorHandler);
     }
     return completionOp;
   };
@@ -169,17 +177,60 @@ test('fetchCurrentCity pass the callbacks later on', done => {
 
 const fetchCurrentCityThatFails = () => {
   let operation = new Operation();
-  doLater(() => operation.fail('GPS BROKEN'));
+  doLater(() => operation.fail(new Error('GPS BROKEN')));
   return operation;
 };
 
-test('error recovery', done => {
+test('sync error recovery', done => {
   fetchCurrentCityThatFails()
     .catch(() => {
       return 'default city';
     })
     .then(city => {
       expect(city).toBe('default city');
+      done();
+    });
+});
+
+test('async error recovery', done => {
+  fetchCurrentCityThatFails()
+    .catch(() => {
+      return fetchCurrentCity();
+    })
+    .then(city => {
+      expect(city).toBe(expectedCurrentCity);
+      done();
+    });
+});
+
+test('error recovery bypassed if not needed', done => {
+  fetchCurrentCity()
+    .catch(() => 'default city')
+    .then(city => {
+      expect(city).toBe(expectedCurrentCity);
+      done();
+    });
+});
+
+test('error fallthrough', done => {
+  fetchCurrentCity()
+    .then(city => {
+      return fetchForecast();
+    })
+    .then(forecast => {
+      expect(forecast).toBe(expectedForecast);
+    })
+    .catch(error => {
+      done();
+    });
+});
+test('sync result transformation', done => {
+  fetchCurrentCity()
+    .then(city => {
+      return '10019';
+    })
+    .then(zip => {
+      expect(zip).toBe('10019');
       done();
     });
 });
