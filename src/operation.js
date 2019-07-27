@@ -70,7 +70,12 @@ function Operation() {
     const completionOp = new Operation();
     const successHandler = () => {
       if (onSuccess) {
-        const callbackResult = onSuccess(operation.result);
+        let callbackResult;
+        try {
+          callbackResult = onSuccess(operation.result);
+        } catch (e) {
+          completionOp.fail(e);
+        }
         if (callbackResult && callbackResult.then) {
           callbackResult.forwardCompletion(completionOp);
           return;
@@ -82,7 +87,12 @@ function Operation() {
     };
     const errorHandler = () => {
       if (onError) {
-        const callbackResult = onError(operation.error);
+        let callbackResult;
+        try {
+          callbackResult = onError(operation.error);
+        } catch (e) {
+          completionOp.fail(e);
+        }
         if (callbackResult && callbackResult.then) {
           callbackResult.forwardCompletion(completionOp);
           return;
@@ -231,6 +241,31 @@ test('sync result transformation', done => {
     })
     .then(zip => {
       expect(zip).toBe('10019');
+      done();
+    });
+});
+
+test('thrown error recovery', done => {
+  fetchCurrentCity()
+    .then(city => {
+      throw new Error('oh noes');
+      return fetchWeather(city);
+    })
+    .catch(e => done());
+});
+
+test('error from error', done => {
+  fetchCurrentCity()
+    .then(city => {
+      throw new Error('oh noes');
+      return fetchWeather(city);
+    })
+    .catch(error => {
+      expect(error.message).toBe('oh noes');
+      throw new Error('oh noes 2');
+    })
+    .catch(error => {
+      expect(error.message).toBe('oh noes 2');
       done();
     });
 });
